@@ -2,55 +2,61 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Surgical Editor.js Build</title>
+    <title>Lexical Production Build</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lexical@0.14.5/dist/lexical.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lexical/rich-text@0.14.5/dist/lexical-rich-text.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lexical/list@0.14.5/dist/lexical-list.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@lexical/history@0.14.5/dist/lexical-history.umd.js"></script>
 
     <style>
-        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; min-height: 300px; }
+        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
+        .editor-input { min-height: 300px; outline: none; }
     </style>
 </head>
 <body>
 
     <div class="editor-container">
-        <div id="editorjs"></div>
+        <div id="editor" class="editor-input" contenteditable="true"></div>
     </div>
 
     <script>
-        // Slower, safer initiation
-        window.addEventListener('load', () => {
-            
-            // Helper to get class or return a "dummy" to prevent crash
-            const getTool = (toolName) => {
-                const tool = window[toolName];
-                if (!tool) {
-                    console.warn(`Plugin ${toolName} failed to load. Skipping it.`);
-                    return null; 
-                }
-                return tool;
-            };
+        const { createEditor, $getRoot, $createParagraphNode, $createTextNode } = Lexical;
+        const { registerRichText } = LexicalRichText;
+        const { registerList } = LexicalList;
+        const { registerHistory } = LexicalHistory;
 
-            const tools = {
-                header: getTool('Header'),
-                list: getTool('List'),
-                quote: getTool('Quote'),
-                table: getTool('Table')
-            };
+        const config = {
+            namespace: 'LexicalPro',
+            onError: (err) => console.error(err),
+            nodes: [
+                LexicalList.ListItemNode,
+                LexicalList.ListNode,
+                LexicalRichText.HeadingNode,
+                LexicalRichText.QuoteNode
+            ]
+        };
 
-            // Remove nulls so Editor.js doesn't freak out
-            Object.keys(tools).forEach(key => tools[key] === null && delete tools[key]);
+        // Initialize and link
+        const editor = createEditor(config);
+        editor.setRootElement(document.getElementById('editor'));
 
-            const editor = new EditorJS({
-                holder: 'editorjs',
-                tools: tools,
-                onReady: () => console.log('Editor.js is ready!'),
-                onError: (e) => console.error('Editor.js error:', e)
-            });
+        // Register core features
+        registerRichText(editor);
+        registerList(editor);
+        registerHistory(editor, LexicalHistory.createHistoryState(), 1000);
+
+        // Seed initial content
+        editor.update(() => {
+            const root = $getRoot();
+            if (root.isEmpty()) {
+                const p = $createParagraphNode();
+                p.append($createTextNode('Welcome to your professional Lexical build.'));
+                root.append(p);
+            }
         });
+
+        console.log("Lexical Engine initialized and ready.");
     </script>
 </body>
 </html>
