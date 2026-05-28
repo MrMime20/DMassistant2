@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GitHub Hosted Production Editor.js Workspace</title>
+    <title>Ultimate Production Editor.js Engine</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
     
@@ -63,7 +63,7 @@
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 40px 50px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
             box-sizing: border-box;
             min-height: 500px;
         }
@@ -101,20 +101,20 @@
 </head>
 <body>
 
-    <h1>Production Block Workspace</h1>
-    <p class="subtitle">Press <strong>TAB</strong> for plugins. Highlight text for colors and marks. Grab block edges to drag!</p>
+    <h1>The Ultimate Block Workspace</h1>
+    <p class="subtitle">Press <strong>TAB</strong> for dynamic blocks. Highlight text for custom color pickers. Grab the left handles to drag blocks!</p>
 
     <div class="editor-container">
         <div id="editorjs"></div>
     </div>
 
     <div class="actions">
-        <span class="hint">Includes <strong>Drag-Drop</strong>, <strong>Undo System (Ctrl+Z)</strong>, and <strong>Alignments</strong></span>
-        <button id="save-btn">Export Clean JSON</button>
+        <span class="hint">Active Modules: <strong>Drag-Drop Engine</strong>, <strong>Undo System (Ctrl+Z)</strong>, and <strong>Tune Alignments</strong></span>
+        <button id="save-btn">Export Production JSON</button>
     </div>
 
     <script>
-        // Mapping explicit constructor variables exposed via un-sandboxed global window
+        // Mapping names out of clean web-server window namespaces
         const SafeList = window.EditorjsList || window.List; 
         const SafeCode = window.CodeTool || window.Code;
         const SafeRaw = window.RawTool || window.Raw;
@@ -122,21 +122,30 @@
 
         const editor = new EditorJS({
             holder: 'editorjs',
-            placeholder: 'Type a message or press Tab to test layout blocks...',
+            placeholder: 'Type right here, or hit Tab to summon block templates...',
             
-            // Register global block text alignment tune settings
+            // Connect global alignments modifier to all block nodes
             tunes: ['alignmentTune'],
 
             tools: {
+                // Register Block Level Layout Modifier
                 alignmentTune: {
                     class: SafeAlignment,
-                    config: { default: "left" }
+                    config: {
+                        default: "left"
+                    }
                 },
+
+                // Headers & Document Typographies
                 header: {
                     class: Header,
                     inlineToolbar: true,
                     tunes: ['alignmentTune'],
-                    config: { placeholder: 'Heading style...', levels: [1, 2, 3], defaultLevel: 2 }
+                    config: {
+                        placeholder: 'Enter a heading',
+                        levels: [1, 2, 3, 4],
+                        defaultLevel: 2
+                    }
                 },
                 quote: {
                     class: Quote,
@@ -152,6 +161,8 @@
                     inlineToolbar: true
                 },
                 delimiter: Delimiter,
+
+                // Dynamic Arrays & Layout Lists
                 list: {
                     class: SafeList,
                     inlineToolbar: true
@@ -160,6 +171,8 @@
                     class: Checklist,
                     inlineToolbar: true
                 },
+
+                // Media Elements & Data Structures
                 image: SimpleImage,
                 embed: Embed,
                 table: {
@@ -168,6 +181,8 @@
                 },
                 code: SafeCode,
                 raw: SafeRaw,
+
+                // Fine-tuned Text Decoration Utilities (Inline Toolbar)
                 marker: Marker,
                 inlineCode: InlineCode,
                 underline: Underline,
@@ -185,24 +200,24 @@
             data: {},
 
             onReady: () => {
-                // Initialize premium interaction layers safely
+                // Safe Activation of Server-State Level Modules
                 if (window.Undo) {
                     new Undo({ editor });
                 }
                 if (window.DragDrop) {
                     new DragDrop(editor);
                 }
-                console.log('GitHub build environments online. All structural assets running smoothly.');
+                console.log('Core Engine completely operational. Safe Web Context verified.');
             }
         });
 
-        // JSON Exporter Event Hook
+        // JSON Document Parser Target Link
         document.getElementById('save-btn').addEventListener('click', () => {
             editor.save().then((outputData) => {
-                console.log('Clean Extracted Payload Matrix:', outputData);
-                alert('Success! Content blocks matrix captured in browser Developer Console (F12).');
+                console.log('Clean Extracted Document Matrix:', outputData);
+                alert('Success! Content schema successfully mapped inside the Developer Options panel (F12 Console).');
             }).catch((error) => {
-                console.error('Save routine aborted: ', error);
+                console.error('Save engine sequence faulted: ', error);
             });
         });
     </script>
