@@ -114,11 +114,13 @@
     </div>
 
     <script>
-        // Mapping names out of clean web-server window namespaces
+        // Mapping names out of clean web-server window namespaces safely
         const SafeList = window.EditorjsList || window.List; 
         const SafeCode = window.CodeTool || window.Code;
         const SafeRaw = window.RawTool || window.Raw;
         const SafeAlignment = window.AlignmentTune || window.AlignmentBlockTune;
+        const SafeColor = window.ColorPlugin; // The exact global namespace variable for text coloring
+        const SafeAlert = window.Alert; // The exact global namespace variable for alerts
 
         const editor = new EditorJS({
             holder: 'editorjs',
@@ -138,7 +140,7 @@
 
                 // Headers & Document Typographies
                 header: {
-                    class: Header,
+                    class: window.Header,
                     inlineToolbar: true,
                     tunes: ['alignmentTune'],
                     config: {
@@ -148,19 +150,19 @@
                     }
                 },
                 quote: {
-                    class: Quote,
+                    class: window.Quote,
                     inlineToolbar: true,
                     tunes: ['alignmentTune']
                 },
                 warning: {
-                    class: Warning,
+                    class: window.Warning,
                     inlineToolbar: true
                 },
                 alert: {
-                    class: Alert,
+                    class: SafeAlert,
                     inlineToolbar: true
                 },
-                delimiter: Delimiter,
+                delimiter: window.Delimiter,
 
                 // Dynamic Arrays & Layout Lists
                 list: {
@@ -168,26 +170,26 @@
                     inlineToolbar: true
                 },
                 checklist: {
-                    class: Checklist,
+                    class: window.Checklist,
                     inlineToolbar: true
                 },
 
                 // Media Elements & Data Structures
-                image: SimpleImage,
-                embed: Embed,
+                image: window.SimpleImage,
+                embed: window.Embed,
                 table: {
-                    class: Table,
+                    class: window.Table,
                     inlineToolbar: true
                 },
                 code: SafeCode,
                 raw: SafeRaw,
 
                 // Fine-tuned Text Decoration Utilities (Inline Toolbar)
-                marker: Marker,
-                inlineCode: InlineCode,
-                underline: Underline,
+                marker: window.Marker,
+                inlineCode: window.InlineCode,
+                underline: window.Underline,
                 Color: {
-                    class: ColorPlugin,
+                    class: SafeColor,
                     config: {
                         colorCollections: ['#FF1300','#00E2B2','#4153EF','#8A3FFC','#000000'],
                         defaultColor: '#FF1300',
@@ -207,7 +209,7 @@
                 if (window.DragDrop) {
                     new DragDrop(editor);
                 }
-                console.log('Core Engine completely operational. Safe Web Context verified.');
+                console.log('Core Engine completely operational. GitHub Pages Production Active.');
             }
         });
 
