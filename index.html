@@ -2,225 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ultimate Production Editor.js Engine</title>
+    <title>Ultimate Production Editor.js</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>
-    
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/editorjs-text-color-plugin@latest"></script>
-
     <script src="https://cdn.jsdelivr.net/npm/editorjs-alignment-blocktune@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-drag-drop@latest"></script>
 
     <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: #f8fafc;
-            color: #0f172a;
-            margin: 0;
-            padding: 40px 20px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        h1 {
-            font-size: 26px;
-            margin-bottom: 5px;
-            color: #1e293b;
-        }
-
-        .subtitle {
-            margin-top: 0;
-            margin-bottom: 30px;
-            color: #64748b;
-            font-size: 14px;
-        }
-
-        .editor-container {
-            width: 100%;
-            max-width: 900px;
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 40px 50px;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.03);
-            box-sizing: border-box;
-            min-height: 500px;
-        }
-
-        .actions {
-            margin-top: 20px;
-            width: 100%;
-            max-width: 900px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .hint {
-            font-size: 13px;
-            color: #94a3b8;
-        }
-
-        button {
-            background-color: #4f46e5;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            font-size: 15px;
-            font-weight: 500;
-            border-radius: 6px;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        button:hover {
-            background-color: #4338ca;
-        }
+        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
-
-    <h1>The Ultimate Block Workspace</h1>
-    <p class="subtitle">Press <strong>TAB</strong> for dynamic blocks. Highlight text for custom color pickers. Grab the left handles to drag blocks!</p>
 
     <div class="editor-container">
         <div id="editorjs"></div>
     </div>
 
-    <div class="actions">
-        <span class="hint">Active Modules: <strong>Drag-Drop Engine</strong>, <strong>Undo System (Ctrl+Z)</strong>, and <strong>Tune Alignments</strong></span>
-        <button id="save-btn">Export Production JSON</button>
-    </div>
-
     <script>
-        // Mapping names out of clean web-server window namespaces safely
-        const SafeList = window.EditorjsList || window.List; 
-        const SafeCode = window.CodeTool || window.Code;
-        const SafeRaw = window.RawTool || window.Raw;
-        const SafeAlignment = window.AlignmentTune || window.AlignmentBlockTune;
-        const SafeColor = window.ColorPlugin; // The exact global namespace variable for text coloring
-        const SafeAlert = window.Alert; // The exact global namespace variable for alerts
+        // The Guard: Returns the plugin class only when it exists, otherwise logs a warning
+        const getPlugin = (name) => {
+            const plugin = window[name];
+            if (!plugin) console.warn(`Plugin ${name} not found yet!`);
+            return plugin;
+        };
 
         const editor = new EditorJS({
             holder: 'editorjs',
-            placeholder: 'Type right here, or hit Tab to summon block templates...',
-            
-            // Connect global alignments modifier to all block nodes
             tunes: ['alignmentTune'],
-
             tools: {
-                // Register Block Level Layout Modifier
-                alignmentTune: {
-                    class: SafeAlignment,
-                    config: {
-                        default: "left"
-                    }
-                },
-
-                // Headers & Document Typographies
-                header: {
-                    class: window.Header,
-                    inlineToolbar: true,
-                    tunes: ['alignmentTune'],
-                    config: {
-                        placeholder: 'Enter a heading',
-                        levels: [1, 2, 3, 4],
-                        defaultLevel: 2
-                    }
-                },
-                quote: {
-                    class: window.Quote,
-                    inlineToolbar: true,
-                    tunes: ['alignmentTune']
-                },
-                warning: {
-                    class: window.Warning,
-                    inlineToolbar: true
-                },
-                alert: {
-                    class: SafeAlert,
-                    inlineToolbar: true
-                },
-                delimiter: window.Delimiter,
-
-                // Dynamic Arrays & Layout Lists
-                list: {
-                    class: SafeList,
-                    inlineToolbar: true
-                },
-                checklist: {
-                    class: window.Checklist,
-                    inlineToolbar: true
-                },
-
-                // Media Elements & Data Structures
-                image: window.SimpleImage,
-                embed: window.Embed,
-                table: {
-                    class: window.Table,
-                    inlineToolbar: true
-                },
-                code: SafeCode,
-                raw: SafeRaw,
-
-                // Fine-tuned Text Decoration Utilities (Inline Toolbar)
-                marker: window.Marker,
-                inlineCode: window.InlineCode,
-                underline: window.Underline,
-                Color: {
-                    class: SafeColor,
-                    config: {
-                        colorCollections: ['#FF1300','#00E2B2','#4153EF','#8A3FFC','#000000'],
-                        defaultColor: '#FF1300',
-                        type: 'text',
-                        customPicker: true
-                    }
+                alignmentTune: { class: getPlugin('AlignmentBlockTune') },
+                header: { class: getPlugin('Header'), tunes: ['alignmentTune'] },
+                list: { class: getPlugin('List') },
+                quote: { class: getPlugin('Quote'), tunes: ['alignmentTune'] },
+                alert: { class: getPlugin('Alert') },
+                table: { class: getPlugin('Table') },
+                code: { class: getPlugin('Code') },
+                Color: { 
+                    class: getPlugin('ColorPlugin'),
+                    config: { colorCollections: ['#FF1300', '#000000'] } 
                 }
             },
-
-            data: {},
-
-            onReady: () => {
-                // Safe Activation of Server-State Level Modules
-                if (window.Undo) {
-                    new Undo({ editor });
-                }
-                if (window.DragDrop) {
-                    new DragDrop(editor);
-                }
-                console.log('Core Engine completely operational. GitHub Pages Production Active.');
-            }
-        });
-
-        // JSON Document Parser Target Link
-        document.getElementById('save-btn').addEventListener('click', () => {
-            editor.save().then((outputData) => {
-                console.log('Clean Extracted Document Matrix:', outputData);
-                alert('Success! Content schema successfully mapped inside the Developer Options panel (F12 Console).');
-            }).catch((error) => {
-                console.error('Save engine sequence faulted: ', error);
-            });
+            onReady: () => console.log('Editor initialized safely.')
         });
     </script>
 </body>
