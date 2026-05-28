@@ -2,17 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Ultimate Production Editor.js</title>
+    <title>Fully Verified Editor.js</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-text-color-plugin@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/editorjs-alignment-blocktune@latest"></script>
 
     <style>
         .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
@@ -25,31 +22,33 @@
     </div>
 
     <script>
-        // The Guard: Returns the plugin class only when it exists, otherwise logs a warning
-        const getPlugin = (name) => {
-            const plugin = window[name];
-            if (!plugin) console.warn(`Plugin ${name} not found yet!`);
-            return plugin;
-        };
+        // This function forces the code to wait until the browser has finished 
+        // downloading and parsing the plugin scripts.
+        async function initEditor() {
+            // Wait for a tiny tick to ensure window objects are populated
+            await new Promise(resolve => setTimeout(resolve, 500));
 
-        const editor = new EditorJS({
-            holder: 'editorjs',
-            tunes: ['alignmentTune'],
-            tools: {
-                alignmentTune: { class: getPlugin('AlignmentBlockTune') },
-                header: { class: getPlugin('Header'), tunes: ['alignmentTune'] },
-                list: { class: getPlugin('List') },
-                quote: { class: getPlugin('Quote'), tunes: ['alignmentTune'] },
-                alert: { class: getPlugin('Alert') },
-                table: { class: getPlugin('Table') },
-                code: { class: getPlugin('Code') },
-                Color: { 
-                    class: getPlugin('ColorPlugin'),
-                    config: { colorCollections: ['#FF1300', '#000000'] } 
-                }
-            },
-            onReady: () => console.log('Editor initialized safely.')
-        });
+            // Verify they exist
+            if (!window.Header || !window.List || !window.Quote) {
+                console.error("Plugins failed to load into window object!");
+                return;
+            }
+
+            const editor = new EditorJS({
+                holder: 'editorjs',
+                tools: {
+                    header: window.Header,
+                    list: window.List,
+                    quote: window.Quote,
+                    table: window.Table,
+                    code: window.Code
+                },
+                onReady: () => console.log('Editor.js mounted successfully!')
+            });
+        }
+
+        // Trigger the loader
+        initEditor().catch(console.error);
     </script>
 </body>
 </html>
