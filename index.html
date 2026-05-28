@@ -2,17 +2,16 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Fully Verified Editor.js</title>
+    <title>Surgical Editor.js Build</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
     <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
 
     <style>
-        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; }
+        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; min-height: 300px; }
     </style>
 </head>
 <body>
@@ -22,33 +21,36 @@
     </div>
 
     <script>
-        // This function forces the code to wait until the browser has finished 
-        // downloading and parsing the plugin scripts.
-        async function initEditor() {
-            // Wait for a tiny tick to ensure window objects are populated
-            await new Promise(resolve => setTimeout(resolve, 500));
+        // Slower, safer initiation
+        window.addEventListener('load', () => {
+            
+            // Helper to get class or return a "dummy" to prevent crash
+            const getTool = (toolName) => {
+                const tool = window[toolName];
+                if (!tool) {
+                    console.warn(`Plugin ${toolName} failed to load. Skipping it.`);
+                    return null; 
+                }
+                return tool;
+            };
 
-            // Verify they exist
-            if (!window.Header || !window.List || !window.Quote) {
-                console.error("Plugins failed to load into window object!");
-                return;
-            }
+            const tools = {
+                header: getTool('Header'),
+                list: getTool('List'),
+                quote: getTool('Quote'),
+                table: getTool('Table')
+            };
+
+            // Remove nulls so Editor.js doesn't freak out
+            Object.keys(tools).forEach(key => tools[key] === null && delete tools[key]);
 
             const editor = new EditorJS({
                 holder: 'editorjs',
-                tools: {
-                    header: window.Header,
-                    list: window.List,
-                    quote: window.Quote,
-                    table: window.Table,
-                    code: window.Code
-                },
-                onReady: () => console.log('Editor.js mounted successfully!')
+                tools: tools,
+                onReady: () => console.log('Editor.js is ready!'),
+                onError: (e) => console.error('Editor.js error:', e)
             });
-        }
-
-        // Trigger the loader
-        initEditor().catch(console.error);
+        });
     </script>
 </body>
 </html>
