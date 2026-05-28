@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitHub Hosted Production Editor.js Workspace</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/editorjs@latest"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/header@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/quote@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/warning@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/delimiter@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-alert@latest"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/list@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/checklist@latest"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/simple-image@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/embed@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/table@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/code@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/raw@latest"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/marker@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/inline-code@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@editorjs/underline@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-text-color-plugin@latest"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-alignment-blocktune@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-undo@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/editorjs-drag-drop@latest"></script>
+
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 26px;
+            margin-bottom: 5px;
+            color: #1e293b;
+        }
+
+        .subtitle {
+            margin-top: 0;
+            margin-bottom: 30px;
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .editor-container {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 40px 50px;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.02);
+            box-sizing: border-box;
+            min-height: 500px;
+        }
+
+        .actions {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .hint {
+            font-size: 13px;
+            color: #94a3b8;
+        }
+
+        button {
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 15px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        button:hover {
+            background-color: #4338ca;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Production Block Workspace</h1>
+    <p class="subtitle">Press <strong>TAB</strong> for plugins. Highlight text for colors and marks. Grab block edges to drag!</p>
+
+    <div class="editor-container">
+        <div id="editorjs"></div>
+    </div>
+
+    <div class="actions">
+        <span class="hint">Includes <strong>Drag-Drop</strong>, <strong>Undo System (Ctrl+Z)</strong>, and <strong>Alignments</strong></span>
+        <button id="save-btn">Export Clean JSON</button>
+    </div>
+
+    <script>
+        // Mapping explicit constructor variables exposed via un-sandboxed global window
+        const SafeList = window.EditorjsList || window.List; 
+        const SafeCode = window.CodeTool || window.Code;
+        const SafeRaw = window.RawTool || window.Raw;
+        const SafeAlignment = window.AlignmentTune || window.AlignmentBlockTune;
+
+        const editor = new EditorJS({
+            holder: 'editorjs',
+            placeholder: 'Type a message or press Tab to test layout blocks...',
+            
+            // Register global block text alignment tune settings
+            tunes: ['alignmentTune'],
+
+            tools: {
+                alignmentTune: {
+                    class: SafeAlignment,
+                    config: { default: "left" }
+                },
+                header: {
+                    class: Header,
+                    inlineToolbar: true,
+                    tunes: ['alignmentTune'],
+                    config: { placeholder: 'Heading style...', levels: [1, 2, 3], defaultLevel: 2 }
+                },
+                quote: {
+                    class: Quote,
+                    inlineToolbar: true,
+                    tunes: ['alignmentTune']
+                },
+                warning: {
+                    class: Warning,
+                    inlineToolbar: true
+                },
+                alert: {
+                    class: Alert,
+                    inlineToolbar: true
+                },
+                delimiter: Delimiter,
+                list: {
+                    class: SafeList,
+                    inlineToolbar: true
+                },
+                checklist: {
+                    class: Checklist,
+                    inlineToolbar: true
+                },
+                image: SimpleImage,
+                embed: Embed,
+                table: {
+                    class: Table,
+                    inlineToolbar: true
+                },
+                code: SafeCode,
+                raw: SafeRaw,
+                marker: Marker,
+                inlineCode: InlineCode,
+                underline: Underline,
+                Color: {
+                    class: ColorPlugin,
+                    config: {
+                        colorCollections: ['#FF1300','#00E2B2','#4153EF','#8A3FFC','#000000'],
+                        defaultColor: '#FF1300',
+                        type: 'text',
+                        customPicker: true
+                    }
+                }
+            },
+
+            data: {},
+
+            onReady: () => {
+                // Initialize premium interaction layers safely
+                if (window.Undo) {
+                    new Undo({ editor });
+                }
+                if (window.DragDrop) {
+                    new DragDrop(editor);
+                }
+                console.log('GitHub build environments online. All structural assets running smoothly.');
+            }
+        });
+
+        // JSON Exporter Event Hook
+        document.getElementById('save-btn').addEventListener('click', () => {
+            editor.save().then((outputData) => {
+                console.log('Clean Extracted Payload Matrix:', outputData);
+                alert('Success! Content blocks matrix captured in browser Developer Console (F12).');
+            }).catch((error) => {
+                console.error('Save routine aborted: ', error);
+            });
+        });
+    </script>
+</body>
+</html>
