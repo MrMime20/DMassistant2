@@ -2,61 +2,64 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Lexical Production Build</title>
+    <title>Lexical Global Build</title>
     
-    <script src="https://cdn.jsdelivr.net/npm/lexical@0.14.5/dist/lexical.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lexical/rich-text@0.14.5/dist/lexical-rich-text.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lexical/list@0.14.5/dist/lexical-list.umd.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@lexical/history@0.14.5/dist/lexical-history.umd.js"></script>
+    <script src="https://unpkg.com/lexical@0.14.5/dist/lexical.umd.js"></script>
+    <script src="https://unpkg.com/@lexical/rich-text@0.14.5/dist/lexical-rich-text.umd.js"></script>
+    <script src="https://unpkg.com/@lexical/list@0.14.5/dist/lexical-list.umd.js"></script>
+    <script src="https://unpkg.com/@lexical/history@0.14.5/dist/lexical-history.umd.js"></script>
 
     <style>
         .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-        .editor-input { min-height: 300px; outline: none; }
+        #editor { min-height: 300px; outline: none; }
     </style>
 </head>
 <body>
 
     <div class="editor-container">
-        <div id="editor" class="editor-input" contenteditable="true"></div>
+        <div id="editor" contenteditable="true"></div>
     </div>
 
     <script>
-        const { createEditor, $getRoot, $createParagraphNode, $createTextNode } = Lexical;
-        const { registerRichText } = LexicalRichText;
-        const { registerList } = LexicalList;
-        const { registerHistory } = LexicalHistory;
-
-        const config = {
-            namespace: 'LexicalPro',
-            onError: (err) => console.error(err),
-            nodes: [
-                LexicalList.ListItemNode,
-                LexicalList.ListNode,
-                LexicalRichText.HeadingNode,
-                LexicalRichText.QuoteNode
-            ]
-        };
-
-        // Initialize and link
-        const editor = createEditor(config);
-        editor.setRootElement(document.getElementById('editor'));
-
-        // Register core features
-        registerRichText(editor);
-        registerList(editor);
-        registerHistory(editor, LexicalHistory.createHistoryState(), 1000);
-
-        // Seed initial content
-        editor.update(() => {
-            const root = $getRoot();
-            if (root.isEmpty()) {
-                const p = $createParagraphNode();
-                p.append($createTextNode('Welcome to your professional Lexical build.'));
-                root.append(p);
+        // We use a simple window load listener to ensure everything is parsed
+        window.onload = function() {
+            if (typeof Lexical === 'undefined') {
+                console.error("Lexical library failed to load globally.");
+                return;
             }
-        });
 
-        console.log("Lexical Engine initialized and ready.");
+            // Destructure from the Lexical global object
+            const { createEditor, $getRoot, $createParagraphNode, $createTextNode } = Lexical;
+            const { registerRichText } = LexicalRichText;
+            const { registerList } = LexicalList;
+            const { registerHistory } = LexicalHistory;
+
+            const editor = createEditor({
+                namespace: 'MyEditor',
+                onError: (e) => console.error(e),
+                nodes: [
+                    LexicalList.ListItemNode,
+                    LexicalList.ListNode,
+                    LexicalRichText.HeadingNode,
+                    LexicalRichText.QuoteNode
+                ]
+            });
+
+            editor.setRootElement(document.getElementById('editor'));
+
+            registerRichText(editor);
+            registerList(editor);
+            registerHistory(editor, LexicalHistory.createHistoryState(), 1000);
+
+            editor.update(() => {
+                const root = $getRoot();
+                if (root.isEmpty()) {
+                    const p = $createParagraphNode();
+                    p.append($createTextNode('Lexical is finally active!'));
+                    root.append(p);
+                }
+            });
+        };
     </script>
 </body>
 </html>
