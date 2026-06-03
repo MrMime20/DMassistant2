@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>D&D 5e Monster Gallery</title>
+    <style>
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; padding: 20px; }
+        .card { border: 1px solid #ddd; padding: 10px; text-align: center; border-radius: 8px; }
+        img { width: 100%; height: 200px; object-fit: contain; background: #f9f9f9; }
+        h3 { font-size: 1rem; margin-top: 10px; }
+    </style>
+</head>
+<body>
+
+<h1>D&D 5e Monster Gallery</h1>
+<div id="gallery" class="grid">Loading monsters...</div>
+
+<script>
+    const BASE_URL = 'https://www.dnd5eapi.co';
+
+    async function loadGallery() {
+        const gallery = document.getElementById('gallery');
+        try {
+            // 1. Get the list of all monsters
+            const listResponse = await fetch(`${BASE_URL}/api/monsters`);
+            const listData = await listResponse.json();
+            
+            gallery.innerHTML = ''; // Clear loading text
+
+            // 2. Fetch individual monster details to get the image path
+            for (const monster of listData.results) {
+                const detailResponse = await fetch(`${BASE_URL}${monster.url}`);
+                const monsterData = await detailResponse.json();
+
+                if (monsterData.image) {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.innerHTML = `
+                        <img src="${BASE_URL}${monsterData.image}" alt="${monsterData.name}">
+                        <h3>${monsterData.name}</h3>
+                    `;
+                    gallery.appendChild(card);
+                }
+            }
+        } catch (error) {
+            gallery.innerHTML = 'Error loading monsters.';
+            console.error(error);
+        }
+    }
+
+    loadGallery();
+</script>
+</body>
+</html>
