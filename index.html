@@ -1,65 +1,735 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Lexical Global Build</title>
-    
-    <script src="https://unpkg.com/lexical@0.14.5/dist/lexical.umd.js"></script>
-    <script src="https://unpkg.com/@lexical/rich-text@0.14.5/dist/lexical-rich-text.umd.js"></script>
-    <script src="https://unpkg.com/@lexical/list@0.14.5/dist/lexical-list.umd.js"></script>
-    <script src="https://unpkg.com/@lexical/history@0.14.5/dist/lexical-history.umd.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>DM Assistant 2.0</title>
 
-    <style>
-        .editor-container { max-width: 800px; margin: 40px auto; padding: 20px; border: 1px solid #ccc; border-radius: 8px; }
-        #editor { min-height: 300px; outline: none; }
-    </style>
+<script src="https://cdn.jsdelivr.net/npm/tinymce@7/tinymce.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<link rel="stylesheet" href="css/styles.css">
 </head>
-<body>
+<body class="dark">
 
-    <div class="editor-container">
-        <div id="editor" contenteditable="true"></div>
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <div class="logo">
+            <div class="logo-icon"><i data-lucide="dices"></i></div>
+            <span class="sidebar-text">DM Assistant 2.0</span>
+        </div>
+        <button class="nav-btn collapse-btn" onclick="toggleSidebar()" title="Toggle Sidebar">
+            <i data-lucide="menu"></i>
+        </button>
     </div>
 
-    <script>
-        // We use a simple window load listener to ensure everything is parsed
-        window.onload = function() {
-            if (typeof Lexical === 'undefined') {
-                console.error("Lexical library failed to load globally.");
-                return;
-            }
+    <div class="nav" id="navContainer">
+        <button class="nav-btn active" onclick="switchTab('dashboard')">
+            <i data-lucide="layout-dashboard"></i> <span class="sidebar-text">Dashboard</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('notes')">
+            <i data-lucide="book"></i> <span class="sidebar-text">Notes</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('initiative')">
+            <i data-lucide="swords"></i> <span class="sidebar-text">Encounter</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('encyclopedia')">
+            <i data-lucide="book-open"></i> <span class="sidebar-text">Encyclopedia</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('map')">
+            <i data-lucide="map"></i> <span class="sidebar-text">Map</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('audio')">
+            <i data-lucide="music"></i> <span class="sidebar-text">Music</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('npc')">
+            <i data-lucide="contact"></i> <span class="sidebar-text">NPC Directory</span>
+        </button>
+        <button class="nav-btn" onclick="switchTab('settings')">
+            <i data-lucide="settings"></i> <span class="sidebar-text">Campaign Settings</span>
+        </button>
+    </div>
 
-            // Destructure from the Lexical global object
-            const { createEditor, $getRoot, $createParagraphNode, $createTextNode } = Lexical;
-            const { registerRichText } = LexicalRichText;
-            const { registerList } = LexicalList;
-            const { registerHistory } = LexicalHistory;
+    <div class="directory-header">
+        <span class="sidebar-text">NOTES DIRECTORY</span>
+        <div class="directory-actions">
+            <button onclick="createFolder()" title="New Folder"><i data-lucide="folder-plus"></i></button>
+            <button onclick="createFile()" title="New File"><i data-lucide="file-plus"></i></button>
+        </div>
+    </div>
 
-            const editor = createEditor({
-                namespace: 'MyEditor',
-                onError: (e) => console.error(e),
-                nodes: [
-                    LexicalList.ListItemNode,
-                    LexicalList.ListNode,
-                    LexicalRichText.HeadingNode,
-                    LexicalRichText.QuoteNode
-                ]
-            });
+    <div class="filter-wrap">
+        <input type="text" class="filter-input" id="searchFilter" placeholder="Quick filter files..." oninput="renderTree()" />
+    </div>
 
-            editor.setRootElement(document.getElementById('editor'));
+    <div class="file-tree" id="fileTree" ondragover="allowDrop(event)" ondrop="handleRootDrop(event)"></div>
 
-            registerRichText(editor);
-            registerList(editor);
-            registerHistory(editor, LexicalHistory.createHistoryState(), 1000);
+    <div class="sidebar-bottom">
+        <button class="bottom-btn" onclick="toggleDiceWidget()">
+            <i data-lucide="dices"></i> <span class="sidebar-text">Quick Roller</span>
+        </button>
+        <button class="bottom-btn" onclick="toggleTheme()">
+            <i data-lucide="moon"></i> <span class="sidebar-text">Dark Mode</span>
+        </button>
+    </div>
+</aside>
 
-            editor.update(() => {
-                const root = $getRoot();
-                if (root.isEmpty()) {
-                    const p = $createParagraphNode();
-                    p.append($createTextNode('Lexical is finally active!'));
-                    root.append(p);
-                }
-            });
-        };
-    </script>
+<main class="main">
+    <div class="view-container active" id="view-dashboard">
+        <!-- Dashboard populated by JS -->
+    </div>
+
+    <div class="view-container" id="view-notes">
+        <div class="editor-view" id="editorView">
+            <input class="doc-title" id="docTitle" placeholder="Untitled Note" oninput="updateCurrentFileTitle()" />
+            <textarea id="editor"></textarea>
+        </div>
+    </div>
+
+    <div class="view-container" id="view-initiative">
+        <div class="initiative-header-bar">
+            <div class="init-stat"><span>Turn:</span> <strong id="initTurnName">None</strong></div>
+            <div class="init-stat"><span>Creatures:</span> <strong id="initCount">0</strong></div>
+            <div class="init-stat"><span>Round:</span> <strong id="initRound">1</strong></div>
+            <div class="init-stat"><span>Time Elapsed:</span> <strong id="initTime">0s</strong></div>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <button class="init-action-btn" id="togglePartyBtn" onclick="togglePartyPanel()" title="Toggle Saved Party Panel"><i data-lucide="users"></i></button>
+                <button class="init-action-btn" id="toggleNpcBtn" onclick="toggleNpcPanel()" title="Toggle Saved NPC Panel"><i data-lucide="contact"></i></button>
+                <button class="init-action-btn" onclick="endEncounter()" title="End Encounter"><i data-lucide="rotate-ccw"></i></button>
+                <button class="init-action-btn" onclick="nextTurn()" title="Next Turn"><i data-lucide="step-forward"></i></button>
+            </div>
+        </div>
+        
+        <div style="display: flex; flex: 1; overflow: hidden; position: relative;">
+            <!-- Main Tracker Workspace -->
+            <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                <div class="initiative-builder">
+                    <div class="init-input-group">
+                        <label>Creature Name</label>
+                        <input type="text" id="initName" placeholder="e.g. Goblin" />
+                    </div>
+                    <div class="init-input-group">
+                        <label>Initiative</label>
+                        <input type="number" id="initVal" placeholder="0" />
+                    </div>
+                    <div class="init-input-group">
+                        <label>Max HP</label>
+                        <input type="number" id="initHp" placeholder="Max" />
+                    </div>
+                    <div class="init-input-group">
+                        <label>Armor Class</label>
+                        <input type="number" id="initAc" placeholder="10" />
+                    </div>
+                    <div class="init-input-group">
+                        <label>Quantity</label>
+                        <input type="number" id="initQty" value="1" min="1" />
+                    </div>
+                    <button class="init-add-btn" onclick="addInitiativeEntity()"><i data-lucide="plus"></i></button>
+                </div>
+
+                <div class="initiative-list" id="initiativeList"></div>
+            </div>
+
+            <!-- Collapsible Party Panel (Sidebar) -->
+            <div id="initiativePartyPanel" class="collapsed">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: var(--tracker-text);">
+                        <i data-lucide="users" style="width: 18px; height: 18px;"></i> Saved Party
+                    </div>
+                    <button class="init-action-btn" onclick="togglePartyPanel()" style="padding: 4px;" title="Close Panel">
+                        <i data-lucide="chevrons-right"></i>
+                    </button>
+                </div>
+                <div style="padding: 12px 20px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    Click a player's entry to import them directly to the encounter.
+                </div>
+                <div style="padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 10px;">
+                    <button class="init-add-btn" id="importPartyBtn" onclick="importAllPlayersToInitiative()" style="height: 34px; padding: 0 12px; font-size: 13px; width: 100%; justify-content: center; background: var(--tracker-border)">
+                        <i data-lucide="user-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> Import Entire Party
+                    </button>
+                </div>
+                <div id="initiativePartyList" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- Party members items directly clickable to import -->
+                </div>
+            </div>
+
+            <!-- Collapsible NPC Panel (Sidebar) -->
+            <div id="initiativeNpcPanel" class="collapsed">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700;">
+                    <div style="display: flex; align-items: center; gap: 8px; color: var(--tracker-text);">
+                        <i data-lucide="contact" style="width: 18px; height: 18px;"></i> Saved NPCs
+                    </div>
+                    <button class="init-action-btn" onclick="toggleNpcPanel()" style="padding: 4px;" title="Close Panel">
+                        <i data-lucide="chevrons-right"></i>
+                    </button>
+                </div>
+                <div style="padding: 12px 20px; font-size: 13px; color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    Click an NPC's entry to import them directly to the encounter.
+                </div>
+                <div style="padding: 12px 20px; border-bottom: 1px solid var(--border); display: flex; gap: 10px;">
+                    <button class="init-add-btn" id="importNpcBtn" onclick="importAllNpcsToInitiative()" style="height: 34px; padding: 0 12px; font-size: 13px; width: 100%; justify-content: center; background: var(--tracker-border)">
+                        <i data-lucide="user-check" style="width: 14px; height: 14px; margin-right: 6px;"></i> Import All NPCs
+                    </button>
+                </div>
+                <div id="initiativeNpcList" style="flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px;">
+                    <!-- NPC entries clickable to import -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-container" id="view-encyclopedia">
+        <div class="encyclopedia-view">
+            <div class="enc-sidebar">
+                <div class="enc-controls">
+                    <select id="encCategory" onchange="loadEncyclopediaCategory()">
+                        <option value="favorites">Favorites ⭐</option>
+                        <option value="2014/ability-scores">Ability Scores</option>
+                        <option value="2014/alignments">Alignments</option>
+                        <option value="2014/backgrounds">Backgrounds</option>
+                        <option value="2014/classes">Classes</option>
+                        <option value="2014/conditions">Conditions</option>
+                        <option value="2014/damage-types">Damage Types</option>
+                        <option value="2014/equipment">Equipment</option>
+                        <option value="2014/equipment-categories">Equipment Categories</option>
+                        <option value="2014/feats">Feats</option>
+                        <option value="2014/features">Features</option>
+                        <option value="2014/languages">Languages</option>
+                        <option value="2014/magic-items">Magic Items</option>
+                        <option value="2014/magic-schools">Magic Schools</option>
+                        <option value="2014/monsters" selected>Monsters</option>
+                        <option value="2014/proficiencies">Proficiencies</option>
+                        <option value="2014/races">Races</option>
+                        <option value="2014/rule-sections">Rule Sections</option>
+                        <option value="2014/rules">Rules</option>
+                        <option value="2014/skills">Skills</option>
+                        <option value="2014/spells">Spells</option>
+                        <option value="2014/subclasses">Subclasses</option>
+                        <option value="2014/subraces">Subraces</option>
+                        <option value="2014/traits">Traits</option>
+                        <option value="2014/weapon-properties">Weapon Properties</option>
+                    </select>
+                    <input type="text" id="encSearch" placeholder="Search..." oninput="filterEncyclopedia()"/>
+                </div>
+                <div class="enc-index-list" id="encIndexList"></div>
+            </div>
+            <div class="enc-content" id="encContent">
+                <div class="enc-placeholder-msg">Select an entry from the encyclopedia to view its details.</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-container" id="view-map">
+        <!-- Map Tool Bar -->
+        <div class="initiative-header-bar" style="background: var(--tracker-bg); border-bottom: 2px solid var(--tracker-border);">
+            <div class="init-stat">
+                <span>Active Map:</span> 
+                <select id="mapActiveSelector" onchange="switchActiveMap(this.value)" style="background: var(--main-bg); color: var(--text); padding: 6px 12px; border-radius: 6px; border: 1px solid var(--border); font-size: 14px; font-weight: bold; margin-left: 8px;">
+                    <option value="">-- Select Map --</option>
+                </select>
+            </div>
+            
+            <!-- Tools and status -->
+            <div id="mapToolsToolbar" style="display: flex; gap: 8px; align-items: center;">
+                <!-- Tools Toggle buttons -->
+                <button class="init-action-btn map-tool-btn active" id="toolMove" onclick="selectMapTool('move')" title="Move Tokens"><i data-lucide="mouse-pointer"></i></button>
+                <button class="init-action-btn map-tool-btn" id="toolBrush" onclick="selectMapTool('brush')" title="Paint Fog"><i data-lucide="brush"></i></button>
+                <button class="init-action-btn map-tool-btn" id="toolEraser" onclick="selectMapTool('eraser')" title="Reveal/Erase Fog"><i data-lucide="eraser"></i></button>
+                
+                <div style="height: 20px; width: 1px; background: var(--border); margin: 0 4px;"></div>
+                
+                <!-- Brush controls (sliders) -->
+                <div id="brushSizeControl" style="display: none; align-items: center; gap: 6px; font-size: 12px; background: var(--main-bg); padding: 4px 10px; border-radius: 8px; border: 1px solid var(--border);">
+                    <span style="color: var(--text-muted); font-size: 11px;">Size:</span>
+                    <input type="range" id="fogBrushSize" min="5" max="100" value="30" oninput="document.getElementById('brushSizeLabel').textContent = this.value + 'px'" style="width: 70px; height: 4px; accent-color: var(--accent);" />
+                    <span id="brushSizeLabel" style="min-width: 35px; text-align: left; font-family: monospace;">30px</span>
+                </div>
+                
+                <button class="init-action-btn" onclick="fillAllMapFog()" title="Fill Entire Map with Fog"><i data-lucide="cloud"></i></button>
+                <button class="init-action-btn" onclick="clearAllMapFog()" title="Clear/Reveal Entire Map"><i data-lucide="sun"></i></button>
+                
+                <div style="height: 20px; width: 1px; background: var(--border); margin: 0 4px;"></div>
+
+                <!-- Zoom Controls -->
+                <div style="display: flex; align-items: center; gap: 4px; background: var(--main-bg); padding: 4px 6px; border-radius: 8px; border: 1px solid var(--border);">
+                    <button class="init-action-btn" onclick="adjustMapZoom(-0.15)" title="Zoom Out" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center;"><i data-lucide="zoom-out" style="width: 14px; height: 14px;"></i></button>
+                    <span id="mapZoomLabel" style="min-width: 40px; text-align: center; font-size: 11px; font-weight: 700; font-family: monospace; color: var(--text);">100%</span>
+                    <button class="init-action-btn" onclick="adjustMapZoom(0.15)" title="Zoom In" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center;"><i data-lucide="zoom-in" style="width: 14px; height: 14px;"></i></button>
+                    <button class="init-action-btn" onclick="resetMapZoom()" title="Reset Zoom" style="width: 26px; height: 26px; padding: 0; display: flex; align-items: center; justify-content: center;"><i data-lucide="maximize-2" style="width: 14px; height: 14px;"></i></button>
+                </div>
+
+                <div style="height: 20px; width: 1px; background: var(--border); margin: 0 4px;"></div>
+
+                <button class="init-action-btn" id="toggleMapSidebarBtn" onclick="toggleMapSidebar()" title="Toggle Map Asset Panel"><i data-lucide="folder-open"></i></button>
+                <button class="init-action-btn" id="toggleMapNpcSidebarBtn" onclick="toggleMapNpcSidebar()" title="Toggle NPC Asset Panel"><i data-lucide="contact"></i></button>
+            </div>
+        </div>
+        
+        <div style="display: flex; flex: 1; overflow: hidden; position: relative; background: var(--main-bg);">
+            <!-- Map interaction Status Notification Bar -->
+            <div id="mapMovementBanner" style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); background: var(--tracker-border); color: white; padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; z-index: 100; box-shadow: var(--shadow); display: none; align-items: center; gap: 8px;">
+                <span id="mapMovementBannerText">Moving Token. Click on map to place, or click token to stop.</span>
+                <button onclick="cancelCurrentTokenMovement()" style="background: none; border: none; color: white; cursor: pointer; display: flex; align-items: center;"><i data-lucide="x" style="width:14px; height:14px;"></i></button>
+            </div>
+
+            <!-- Central Map Workspace canvas container -->
+            <div style="flex: 1; display: flex; align-items: center; justify-content: center; overflow: auto; padding: 24px; position: relative;">
+                <div id="mapViewportContainer" class="map-viewport-wrapper" style="position: relative; display: none;">
+                    <!-- Map Image -->
+                    <img id="mapDisplayImage" src="" style="display: block; max-width: 100%; max-height: 75vh; object-fit: contain; pointer-events: none; border-radius: 8px; box-shadow: var(--shadow);" onload="handleMapImageLoaded()" />
+                    
+                    <!-- Fog of War interactive Canvas -->
+                    <canvas id="mapFogCanvas" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border-radius: 8px; cursor: crosshair; opacity: 1.0; transition: opacity 0.2s;" onmousedown="handleFogCanvasMouseDown(event)" onmousemove="handleFogCanvasMouseMove(event)" onmouseup="handleFogCanvasMouseUp(event)" onmouseleave="handleFogCanvasMouseUp(event)"></canvas>
+                    
+                    <!-- Token Layer overlay -->
+                    <div id="mapTokensContainer" style="position: absolute; inset: 0; pointer-events: none; border-radius: 8px; overflow: hidden;" onclick="handleTokensLayerClick(event)">
+                        <!-- Dynamic absolute percentage tokens loaded here -->
+                    </div>
+                </div>
+
+                <div id="mapEmptyMessage" style="text-align: center; color: var(--text-muted); max-width: 400px;">
+                    <i data-lucide="map" style="width: 48px; height: 48px; stroke-width: 1.5; color: var(--text-muted); opacity: 0.5; margin-bottom: 12px;"></i>
+                    <h3 style="font-size: 18px; margin-bottom: 6px;">No Active Map Selected</h3>
+                    <p style="font-size: 14px;">Upload or select a map from the library in the right sidebar to start placing tokens!</p>
+                </div>
+            </div>
+
+            <!-- Collapsible Map Assets Library & Tokens sidebar -->
+            <div id="mapSidebarPanel" style="width: 310px; background: var(--sidebar-bg); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); flex-shrink: 0;">
+                
+                <!-- Tab controller inside Map Sidebar -->
+                <div style="display: flex; border-bottom: 1px solid var(--border); background: var(--tracker-bg);">
+                    <button id="mapSidebarTabMapsBtn" class="map-stab-btn active" onclick="setMapSidebarTab('maps')" style="flex: 1; padding: 12px; border: none; background: none; color: var(--text); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; border-bottom: 2px solid var(--accent); outline: none;">
+                        <i data-lucide="map" style="width:16px; height:16px;"></i> Maps
+                    </button>
+                    <button id="mapSidebarTabTokensBtn" class="map-stab-btn" onclick="setMapSidebarTab('tokens')" style="flex: 1; padding: 12px; border: none; background: none; color: var(--text-muted); font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; border-bottom: 2px solid transparent; outline: none;">
+                        <i data-lucide="users" style="width:16px; height:16px;"></i> Tokens
+                    </button>
+                </div>
+
+                <!-- Maps Library Section -->
+                <div id="mapSidebarSecMaps" class="map-sidebar-tab-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden;">
+                    <!-- New Map Upload panel -->
+                    <div style="padding: 16px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; background: var(--tracker-bg);">
+                        <span style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Add Map</span>
+                        <div class="ce-field" style="margin-bottom: 4px;">
+                            <input type="text" id="mapUploadName" placeholder="Map Name (e.g. Tavern)" style="padding: 8px; font-size: 13px; border-radius: 6px;" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 4px;">
+                            <input type="text" id="mapUploadUrl" placeholder="Image URL (e.g. https://...)" style="padding: 8px; font-size: 12px; border-radius: 6px;" />
+                        </div>
+                        <div style="display: flex; gap: 8px; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 11px; color: var(--text-muted);">or upload file:</span>
+                            <label style="background: var(--tracker-border); color: white; padding: 5px 10px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                <i data-lucide="upload" style="width:12px; height:12px;"></i> Upload
+                                <input type="file" id="mapUploadFile" accept="image/*" onchange="handleMapFileSelected(event)" style="display: none;" />
+                            </label>
+                        </div>
+                        <!-- Tiny preview thumbnail -->
+                        <img id="mapUploadPreview" style="display: none; width: 100%; height: 80px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border); margin-top: 4px;" />
+                        
+                        <button class="init-add-btn" onclick="saveNewMap()" style="height: 34px; font-size: 12px; font-weight: 700; width: 100%; justify-content: center; background: var(--tracker-border); margin-top: 4px;">
+                            <i data-lucide="plus" style="width: 14px; height: 14px; margin-right: 4px;"></i> Save Map
+                        </button>
+                    </div>
+                    
+                    <!-- Search Map Library -->
+                    <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--main-bg);">
+                        <i data-lucide="search" style="width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0;"></i>
+                        <input type="text" id="mapLibrarySearchInput" placeholder="Search map library..." oninput="renderMapLibraryList()" style="width: 100%; border: none; background: transparent; color: var(--text); outline: none; font-size: 13px;" />
+                    </div>
+
+                    <!-- Maps List inside Library -->
+                    <div id="mapLibraryList" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Rendered maps library -->
+                    </div>
+                </div>
+
+                <!-- Tokens Generator & Preset Party Import Section -->
+                <div id="mapSidebarSecTokens" class="map-sidebar-tab-content" style="flex: 1; display: none; flex-direction: column; overflow: hidden;">
+                    
+                    <!-- Custom Token Form -->
+                    <div style="padding: 14px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 10px; background: var(--tracker-bg);">
+                        <span style="font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.5px;">Add Custom Token</span>
+                        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 8px; width: 100%;">
+                            <input type="text" id="tokenGenName" placeholder="Name (e.g. Orc)" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; font-size: 13px; border-radius: 6px; background: var(--main-bg); color: var(--text); border: 1px solid var(--border); outline: none;" />
+                            <input type="text" id="tokenGenSymbol" placeholder="HW" style="width: 100%; min-width: 0; box-sizing: border-box; padding: 8px; font-size: 13px; text-align: center; border-radius: 6px; background: var(--main-bg); color: var(--text); border: 1px solid var(--border); outline: none;" maxlength="2" />
+                        </div>
+                        
+                        <!-- Mini sliders grid -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <label style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">SIZE</label>
+                                <input type="range" id="tokenGenSize" min="3" max="18" value="7" style="accent-color: var(--accent); height: 4px;" />
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <label style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">COLOR</label>
+                                <input type="color" id="tokenGenColor" value="#ef4444" style="width: 100%; height: 26px; border: none; border-radius: 4px; background: transparent; cursor: pointer;" />
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <label style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">ROTATE</label>
+                                <input type="range" id="tokenGenRotation" min="0" max="360" value="0" style="width: 100%; accent-color: var(--accent); height: 4px;" />
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <label style="font-size: 9px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">OPACITY</label>
+                                <input type="range" id="tokenGenOpacity" min="10" max="100" value="100" style="width: 100%; accent-color: var(--accent); height: 4px;" />
+                            </div>
+                        </div>
+                        
+                        <button class="init-add-btn" onclick="saveCustomMapToken()" style="height: 32px; font-size: 12px; font-weight: 700; width: 100%; justify-content: center; background: var(--tracker-border)">
+                            <i data-lucide="plus-circle" style="width: 14px; height: 14px; margin-right: 4px;"></i> Place Token on Map
+                        </button>
+                    </div>
+
+                    <!-- Selected Token Fine-Tuning controls -->
+                    <div id="mapSelectedTokenPanel" style="display: none; padding: 12px; border-bottom: 1px solid var(--border); flex-direction: column; gap: 8px; background: var(--hover);">
+                        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border); padding-bottom: 6px;">
+                            <span style="font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase;">Editing Token</span>
+                            <button onclick="handleDeleteActiveToken()" style="background: none; border: none; color: var(--danger); cursor: pointer; padding: 2px; display: flex;" title="Delete Token"><i data-lucide="trash-2" style="width: 14px; height: 14px;"></i></button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase;">SIZE:</span>
+                                <input type="range" id="tokenEditSize" min="3" max="25" value="7" oninput="updateActiveTokenAttr('size', this.value)" style="accent-color: var(--accent); height: 4px;" />
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase;">ROTATION:</span>
+                                <input type="range" id="tokenEditRotation" min="0" max="360" value="0" oninput="updateActiveTokenAttr('rotation', this.value)" style="accent-color: var(--accent); height: 4px;" />
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11px;">
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase;">OPACITY:</span>
+                                <input type="range" id="tokenEditOpacity" min="10" max="100" value="100" oninput="updateActiveTokenAttr('opacity', this.value)" style="accent-color: var(--accent); height: 4px;" />
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 4px;">
+                                <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase;">COLOR:</span>
+                                <input type="color" id="tokenEditColor" onchange="updateActiveTokenAttr('color', this.value)" style="width: 100%; height: 20px; border: none; background: transparent; cursor: pointer;" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Party members items directly clickable to import -->
+                    <div style="padding: 10px 14px; text-transform: uppercase; font-size: 10px; font-weight: 800; color: var(--text-muted); background: var(--tracker-bg); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 4px;">
+                        <i data-lucide="shield" style="width:12px; height:12px;"></i> Import Party Members
+                    </div>
+                    <div style="padding: 8px 14px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                        Click on a player card to place their tokens directly onto the active map!
+                    </div>
+                    <div id="mapPartyMembersList" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Saved Party Members clickable cards -->
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Collapsible Map NPC Panel (Sidebar) -->
+            <div id="mapNpcSidebarPanel" class="collapsed" style="flex-shrink:0;">
+                <div style="padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; font-weight: 700; background: var(--tracker-bg);">
+                    <div style="display: flex; align-items: center; gap: 8px; color: var(--tracker-text);">
+                        <i data-lucide="contact" style="width: 18px; height: 18px;"></i> Import NPCs
+                    </div>
+                    <button class="init-action-btn" onclick="toggleMapNpcSidebar()" style="padding: 4px;" title="Close Panel">
+                        <i data-lucide="chevrons-right"></i>
+                    </button>
+                </div>
+                <div style="padding: 12px 20px; font-size: 11px; color: var(--text-muted); border-bottom: 1px solid var(--border);">
+                    Click on an NPC card to place their token directly onto the active map!
+                </div>
+                <div id="mapNpcMembersList" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                    <!-- Saved NPCs clickable cards -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="view-container" id="view-settings">
+        <div class="editor-view" style="max-width: 900px; margin: 0 auto; width: 100%; gap: 24px; display: flex; flex-direction: column;">
+            <h1 class="doc-title" style="margin-bottom: 8px;">Campaign Settings</h1>
+            
+            <!-- Campaign Basics -->
+            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="map" style="width: 20px; height: 20px; color: var(--accent);"></i> Campaign Details
+                </h3>
+                <div class="ce-field">
+                    <label>Campaign Name</label>
+                    <input type="text" id="campaignNameInput" placeholder="e.g. Curse of Strahd" oninput="updateCampaignDetails()" />
+                </div>
+                <div class="ce-field">
+                    <label>Campaign Goal / Notes</label>
+                    <textarea id="campaignGoalInput" placeholder="e.g. Defeat Strahd von Zarovich and free Barovia..." style="resize: vertical; min-height: 80px;" oninput="updateCampaignDetails()"></textarea>
+                </div>
+            </div>
+
+            <!-- Party Configuration -->
+            <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 24px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 16px;">
+                <h3 style="font-size: 18px; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                    <i data-lucide="users" style="width: 20px; height: 20px; color: var(--accent);"></i> Saved Party Players
+                </h3>
+                
+                <!-- New Player Form -->
+                <div style="background: var(--tracker-bg); border: 1px solid var(--tracker-border); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 12px;">
+                    <h4 style="font-size: 13px; font-weight: 700; text-transform: uppercase; color: var(--tracker-text); border-bottom: 1px solid var(--tracker-border); padding-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                        <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i> New Party Member
+                    </h4>
+                    <div class="ce-grid-3" style="margin-bottom: 0;">
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Player Name</label>
+                            <input type="text" id="newPlayerName" placeholder="e.g. Yohan the Pirate" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Character Class</label>
+                            <input type="text" id="newPlayerClass" placeholder="e.g. Rogue" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Background</label>
+                            <input type="text" id="newPlayerBg" placeholder="e.g. Sailor" />
+                        </div>
+                    </div>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 0;">
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Armor Class (AC)</label>
+                            <input type="number" id="newPlayerAc" placeholder="13" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Max HP</label>
+                            <input type="number" id="newPlayerMaxHp" placeholder="98" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>Level</label>
+                            <input type="number" id="newPlayerLevel" placeholder="7" min="1" max="100" />
+                        </div>
+                        <div class="ce-field" style="margin-bottom: 0;">
+                            <label>EXP</label>
+                            <input type="number" id="newPlayerExp" placeholder="0" min="0" />
+                        </div>
+                    </div>
+
+                    <!-- Avatar Image Uploader/URL -->
+                    <div style="background: var(--card-bg); padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); display: flex; align-items: center; gap: 16px;">
+                        <div style="position: relative; width: 54px; height: 54px; border-radius: 50%; border: 2px dashed var(--border); display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; background: var(--main-bg);">
+                            <img id="newPlayerImgPreview" style="display: none; width: 100%; height: 100%; object-fit: cover;" />
+                            <i data-lucide="user" style="width: 20px; height: 20px; color: var(--text-muted); position: absolute; pointer-events: none;"></i>
+                        </div>
+                        <div style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                            <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;">Character Avatar Image</span>
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <input type="text" id="newPlayerImgUrl" placeholder="Image URL (e.g. https://...)" style="flex: 1; padding: 8px; font-size: 13px; border-radius: 6px; background: var(--main-bg); color: var(--text); border: 1px solid var(--border); outline: none;" />
+                                <span style="font-size: 11px; color: var(--text-muted);">or</span>
+                                <label style="background: var(--tracker-border); color: white; padding: 7px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 4px; border: none;">
+                                    <i data-lucide="upload" style="width:14px; height:14px;"></i> Upload
+                                    <input type="file" id="newPlayerImgFile" accept="image/*" onchange="handlePlayerImageUpload(event)" style="display: none;" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="ce-field" style="margin-bottom: 0;">
+                        <label>Player Notes / Special Stats</label>
+                        <input type="text" id="newPlayerNotes" placeholder="e.g. Passive Perception 14, Darkvision 60ft" />
+                    </div>
+                    <button class="init-add-btn" onclick="saveNewPlayer()" style="width: 100%; justify-content: center; height: 38px; margin-top: 4px; background: var(--tracker-border); border: none; font-weight: 700; cursor: pointer;">
+                        <i data-lucide="user-plus" style="width: 16px; height: 16px; margin-right: 6px;"></i> Save Player to Party
+                    </button>
+                </div>
+
+                <!-- Players list -->
+                <div id="settingsPlayerList" style="display: flex; flex-direction: column; gap: 12px; margin-top: 8px;">
+                    <!-- Rendered party characters cards live here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Soundboard & Music Tab -->
+    <div class="view-container" id="view-audio">
+        <div style="display: flex; flex: 1; height: 100%; overflow: hidden; background: var(--main-bg);">
+            <!-- Left playlist view -->
+            <div style="flex: 1; padding: 34px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px;">
+                <h1 class="doc-title" style="margin-bottom: 0;">Music</h1>
+                
+                <!-- Add composition card (matches layout style in image) -->
+                <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 12px; padding: 20px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 12px;">
+                    <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.7px;">Add New Sound</span>
+                    <div style="display: flex; gap: 10px; align-items: center; width: 100%;">
+                        <input type="text" id="audioTrackName" placeholder="Track Title (e.g. Boss Battle)" style="flex: 1; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--main-bg); color: var(--text); outline: none;" />
+                        <input type="text" id="audioTrackUrl" placeholder="YouTube URL (e.g. https://www.youtube.com/watch?...)" style="flex: 1.5; padding: 12px 14px; border-radius: 8px; border: 1px solid var(--border); background: var(--main-bg); color: var(--text); outline: none;" />
+                        <button onclick="saveNewAudioTrack()" class="init-add-btn" style="height: 45px; width: 45px; padding: 0; min-width: 45px; border-radius: 8px; background: var(--tracker-border); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; color: white;" title="Add Composition">
+                            <i data-lucide="plus" style="width: 18px; height: 18px;"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- List of music playlists -->
+                <div style="display: flex; flex-direction: column; gap: 10px;" id="audioLibraryList">
+                    <!-- Compositions dynamically drawn here -->
+                </div>
+            </div>
+
+            <!-- Right currently playing panel (matches visual widget in image) -->
+            <div style="width: 350px; background: var(--sidebar-bg); border-left: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; gap: 24px; overflow-y: auto;">
+                <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.7px;">Audio Player</span>
+                
+                <!-- Beautiful container representing player (rounded corners, dark frame) -->
+                <div style="background: #000; border-radius: 16px; min-height: 200px; overflow: hidden; display: flex; flex-direction: column; box-shadow: var(--shadow); border: 1px solid var(--border);">
+                    <div style="flex: 1; width: 100%; aspect-ratio: 16/9; background: #0c0d10; position: relative;">
+                        <!-- The actual YouTube iframe player frame -->
+                        <div id="ytPlayerFrame" style="width: 100%; height: 100%;"></div>
+                    </div>
+                    
+                    <!-- Player metadata / name overlay -->
+                    <div style="padding: 14px; background: #13151a; display: flex; flex-direction: column; gap: 4px;">
+                        <span id="playerTrackTitle" style="color: #ffffff; font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">No track playing</span>
+                        <span id="playerTrackSubtitle" style="color: #8a8d98; font-size: 11px; font-weight: 600;">YouTube Embed Source</span>
+                    </div>
+                </div>
+
+                <!-- Master of Music detail label -->
+                <div style="border-top: 1px solid var(--border); padding-top: 20px; display: flex; flex-direction: column; gap: 12px;">
+                    <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.7px; text-align: center; display: block;">Details</span>
+                    
+                    <div style="background: var(--card-bg); border: 1px solid var(--border); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow);">
+                        <!-- Direct master control sliders -->
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <span style="font-size: 12px; font-weight: 600;">Volume Control</span>
+                            <span id="audioVolumeLabel" style="font-size: 11px; font-family: monospace; color: var(--text-muted);">70%</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <i data-lucide="volume-1" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                            <input type="range" id="audioVolumeSlider" min="0" max="100" value="70" oninput="changeAudioVolume(this.value)" style="flex: 1; height: 4px; accent-color: var(--accent);" />
+                            <i data-lucide="volume-2" style="width: 16px; height: 16px; color: var(--text-muted);"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- NPC Directory Tab -->
+    <div class="view-container" id="view-npc">
+        <div style="display: flex; flex-direction: column; flex: 1; height: 100%; overflow: hidden; background: var(--main-bg);">
+            <!-- NPC Header, same styling but customized for NPCs -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 24px 34px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--tracker-bg);">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 48px; height: 48px; border-radius: 12px; background: var(--hover); color: var(--accent); display: flex; align-items: center; justify-content: center;">
+                        <i data-lucide="contact" style="width: 24px; height: 24px;"></i>
+                    </div>
+                    <div style="display: flex; flex-direction: column;">
+                        <span style="font-size: 24px; font-weight: 800; color: var(--text); font-family: Playfair Display, Georgia, serif;">NPC Directory</span>
+                        <span style="font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.7px;">Manage Allies, Enemies, and Townspeople</span>
+                    </div>
+                </div>
+                <button onclick="addNewNpc()" class="init-add-btn" style="height: 40px; padding: 0 16px; border-radius: 8px; background: var(--tracker-border); border: none; cursor: pointer; display: flex; align-items: center; gap: 8px; color: white;">
+                    <i data-lucide="user-plus" style="width: 16px; height: 16px;"></i> Add NPC
+                </button>
+            </div>
+            
+            <div style="display: flex; flex: 1; overflow: hidden;">
+                <!-- Left Sidebar: Selection & Search List -->
+                <div style="width: 310px; border-right: 1px solid var(--border); background: var(--sidebar-bg); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0;">
+                    <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; background: var(--main-bg);">
+                        <i data-lucide="search" style="width: 14px; height: 14px; color: var(--text-muted); flex-shrink: 0;"></i>
+                        <input type="text" id="npcSearchFilter" placeholder="Search by name, race..." oninput="renderNpcList()" style="width: 100%; border: none; background: transparent; color: var(--text); outline: none; font-size: 13px;" />
+                    </div>
+                    <div id="npcSidebarList" style="flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px;">
+                        <!-- Saved NPCs list -->
+                    </div>
+                </div>
+                
+                <!-- Right Side: Edit Form / Details view -->
+                <div id="npcDetailsContainer" style="flex: 1; padding: 34px; overflow-y: auto; display: flex; flex-direction: column; gap: 24px; background: var(--main-bg);">
+                    <!-- Active NPC Form Rendered dynamic by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Master Music Bar at bottom (visible when music is active and not on audio tab) -->
+    <div id="masterAudioBar" style="display: none; align-items: center; justify-content: space-between; background: var(--tracker-bg); border-top: 2px solid var(--tracker-border); padding: 12px 24px; position: relative; z-index: 100; flex-shrink: 0; box-shadow: 0 -2px 10px rgba(0,0,0,0.15);">
+        <div style="display: flex; align-items: center; gap: 12px; overflow: hidden;">
+            <div style="width: 32px; height: 32px; background: var(--tracker-border); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; animation: audio-spin 4s linear infinite; flex-shrink: 0;">
+                <i data-lucide="music" style="width:16px; height:16px;"></i>
+            </div>
+            <div style="display: flex; flex-direction: column; overflow: hidden;">
+                <span id="masterTrackTitle" style="font-weight: 700; font-size: 13px; color: var(--tracker-text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">Track Title</span>
+                <span style="font-size: 10px; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Currently Playing</span>
+            </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 16px;">
+            <button onclick="toggleMasterPlayState()" class="init-action-btn" id="masterPlayBtn" style="padding: 6px; width: 32px; height: 32px; border-radius: 50%; color: var(--tracker-text); border: 1px solid var(--tracker-border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s;">
+                <i data-lucide="pause" style="width: 14px; height: 14px;"></i>
+            </button>
+            <div style="display: flex; align-items: center; gap: 6px;">
+                <i data-lucide="volume-2" style="width: 14px; height: 14px; color: var(--tracker-text);"></i>
+                <input type="range" id="masterVolumeSlider" min="0" max="100" value="70" oninput="changeAudioVolume(this.value)" style="width: 80px; height: 4px; accent-color: var(--tracker-border);" />
+            </div>
+        </div>
+    </div>
+</main>
+
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+        <h2 id="modalTitle">Modal</h2>
+        <p id="modalText"></p>
+        <input id="modalInput"/>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="closeModal()">Cancel</button>
+            <button class="confirm-btn" id="modalConfirmBtn">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<div class="dice-widget" id="diceWidget">
+    <div class="dice-header">
+        <span><i data-lucide="dices"></i> Quick Roller</span>
+        <div class="dice-header-actions">
+            <button class="dice-action-btn" onclick="clearDiceHistory()" title="Clear History"><i data-lucide="rotate-ccw"></i></button>
+            <button class="dice-close" onclick="toggleDiceWidget()"><i data-lucide="x"></i></button>
+        </div>
+    </div>
+    <div class="dice-body">
+        <div class="dice-grid">
+            <button onclick="appendDice('d4')"><i data-lucide="pyramid"></i> D4</button>
+            <button onclick="appendDice('d6')"><i data-lucide="box"></i> D6</button>
+            <button onclick="appendDice('d8')"><i data-lucide="diamond"></i> D8</button>
+            <button onclick="appendDice('d10')"><i data-lucide="pentagon"></i> D10</button>
+            <button onclick="appendDice('d12')"><i data-lucide="hexagon"></i> D12</button>
+            <button onclick="appendDice('d20')"><i data-lucide="octagon"></i> D20</button>
+            <button onclick="appendDice('d100')"><i data-lucide="circle"></i> D100</button>
+        </div>
+        <div class="dice-input-row">
+            <input type="text" id="diceExpression" placeholder="e.g. 2d20 + 5..." onkeydown="if(event.key === 'Enter') rollFormula()" />
+            <button class="roll-btn" onclick="rollFormula()">ROLL</button>
+        </div>
+        
+        <div class="dice-history-header">
+            <span>ROLL HISTORY</span>
+            <span>RESULT</span>
+        </div>
+        <div class="dice-history-list" id="diceHistoryList"></div>
+    </div>
+</div>
+
+<script src="js/state.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/tree.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/dice.js"></script>
+<script src="js/encyclopedia.js"></script>
+<script src="js/initiative.js"></script>
+<script src="js/settings.js"></script>
+<script src="js/map.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/npc.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/main.js"></script>
+
 </body>
 </html>
