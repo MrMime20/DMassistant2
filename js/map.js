@@ -44,15 +44,22 @@ if (state.maps.length === 0) {
     state.maps = [
         {
             id: "map-default-1",
-            name: "Lich King's Dragon Sanctum",
-            url: "https://images.unsplash.com/photo-1506318137071-a8e063b4bec0?auto=format&fit=crop&q=80&w=1200", // Dark stars map theme
+            name: "Forest Campground",
+            url: "https://runefoundry.com/cdn/shop/products/ForestEncampment_digital_day_grid.jpg?v=1676584019&width=416", // Dark stars map theme
             tokens: [],
             fogData: null
         },
         {
             id: "map-default-2",
-            name: "Whispering Druid glade (Misty)",
-            url: "https://images.unsplash.com/photo-1448375240586-882707db888b?auto=format&fit=crop&q=80&w=1200", // Primeval pine forest topdown
+            name: "Beachside Campground",
+            url: "https://runefoundry.com/cdn/shop/files/BeachCamp_800x557px.jpg?v=1713839209&width=600", // Dark stars map theme
+            tokens: [],
+            fogData: null
+        },
+        {
+            id: "map-default-3",
+            name: "Forest Waterfall",
+            url: "https://runefoundry.com/cdn/shop/files/ForestWaterfallIsometric_digital_grid_day.jpg?v=1688628972", // Primeval pine forest topdown
             tokens: [],
             fogData: null
         }
