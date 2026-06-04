@@ -1,16 +1,20 @@
+
+
+
+
 :root {
-    --sidebar-bg: #f5f5f7;
-    --main-bg: #ffffff;
-    --card-bg: #ffffff;
-    --text: #1f2937;
-    --text-muted: #6b7280;
-    --border: #dcdfe4;
+    --sidebar-bg: #FDFBF7;
+    --main-bg: #EBE6DA;
+    --card-bg: #FDFBF7;
+    --text: #5A5A40;
+    --text-muted: #888076;
+    --border: rgba(61, 53, 47, 0.15);
     --hover: #eceef3;
     --accent: #5b5cf0;
     --accent-soft: #e8e9ff;
     --danger: #ef4444;
     --success: #10b981;
-    --shadow: 0 4px 18px rgba(0,0,0,0.08);
+    --shadow: 0 4px 18px rgba(0, 0, 0, 0.363);
     --gold: #f59e0b;
     --tracker-bg: #fdfaf5;
     --tracker-border: #8b3e2f;
