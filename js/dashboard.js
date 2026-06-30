@@ -154,16 +154,10 @@ function exportCampaignData() {
         diceHistory: (typeof diceHistory !== 'undefined') ? diceHistory : []
     };
 
-    // 1. Get the base campaign name and sanitize it for file systems
     const campaignName = ((typeof state !== 'undefined' && state.campaignName) ? state.campaignName : "Campaign")
         .replace(/[^a-z0-9]/gi, '_')
         .toLowerCase();
-    
-    // 2. Generate the current date in YYYY-MM-DD format
-    const currentDate = new Date().toISOString().split('T')[0];
-
-    // 3. Combine them into the final file name
-    const fileName = `${campaignName}-${currentDate}.json`;
+    const fileName = `${campaignName}-records.json`;
 
     const jsonStr = JSON.stringify(backupObj, null, 2);
     const blob = new Blob([jsonStr], { type: "application/json" });
@@ -200,8 +194,9 @@ function importCampaignData(event) {
             }
 
             openConfirmModal("Overwrite Campaign?", "Are you sure you want to load these records? Loading will replace your active notes, NPCs, map setups, and trackers.", () => {
-                // Safely load and persist in localStorage
-                localStorage.setItem("dm-assistant-v3", JSON.stringify(data.campaignState));
+                // Safely load and persist using our optimized saveState helper
+                state = data.campaignState;
+                saveState();
 
                 if (data.initiativeState) {
                     localStorage.setItem("dma-initiative", JSON.stringify(data.initiativeState));
